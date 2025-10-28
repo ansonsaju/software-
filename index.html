@@ -121,6 +121,21 @@
             50% { opacity: 0.6; transform: scale(1.2); }
         }
 
+        .status-indicator.saving .dot {
+            background: var(--warning-color);
+        }
+
+        .status-indicator.error .dot {
+            background: var(--error-color);
+            animation: none;
+        }
+
+        .auto-save-info {
+            font-size: 11px;
+            color: var(--text-secondary);
+            margin-left: 5px;
+        }
+
         /* Buttons */
         .btn-primary, .btn-secondary, .btn-text {
             padding: 12px 24px;
@@ -603,6 +618,7 @@
                     <span class="status-indicator" id="statusIndicator">
                         <span class="dot"></span>
                         <span id="statusText">Ready</span>
+                        <span class="auto-save-info" id="autoSaveInfo"></span>
                     </span>
                 </div>
             </div>
@@ -729,12 +745,17 @@
             activityLogs: [],
             secretKey: 'admin123',
             editingCell: null,
-            columnTypes: {}
+            columnTypes: {},
+            autoSaveInterval: null,
+            lastSaved: null,
+            hasUnsavedChanges: false
         };
 
         document.addEventListener('DOMContentLoaded', () => {
             initializeApp();
             loadFromStorage();
+            startAutoSave();
+            startAutoSaveIndicator();
         });
 
         function initializeApp() {
@@ -835,6 +856,7 @@
             renderDynamicFilters();
             renderTable();
             saveToStorage();
+            STATE.hasUnsavedChanges = false;
         }
 
         function analyzeColumnTypes(sheetName) {
@@ -1093,6 +1115,7 @@
                 const row = STATE.sheets[STATE.currentSheet].find(r => r._id === id);
                 row[column] = newValue;
                 
+                STATE.hasUnsavedChanges = true;
                 saveState();
                 saveToStorage();
                 logActivity('Cell Edited', { 
@@ -1102,7 +1125,7 @@
                     oldValue, 
                     newValue 
                 });
-                showToast('Cell updated', 'success');
+                showToast('Cell updated & auto-saved', 'success');
             }
             
             cell.innerHTML = `<span class="cell-value">${escapeHtml(newValue)}</span>`;
@@ -1197,6 +1220,8 @@
 
         function saveToStorage() {
             try {
+                updateStatus('Saving...', 'saving');
+                
                 const dataToSave = {
                     sheets: STATE.sheets,
                     currentSheet: STATE.currentSheet,
@@ -1208,11 +1233,53 @@
                 };
                 
                 localStorage.setItem('excelDashboardData', JSON.stringify(dataToSave));
-                updateStatus('Saved');
+                STATE.lastSaved = new Date();
+                STATE.hasUnsavedChanges = false;
+                
+                updateStatus('Saved', 'success');
+                updateAutoSaveIndicator();
                 logActivity('Data Saved to Storage');
             } catch (error) {
                 console.error('Save error:', error);
-                updateStatus('Error', 'error');
+                updateStatus('Save Error', 'error');
+                showToast('Error saving data: ' + error.message, 'error');
+            }
+        }
+
+        function startAutoSave() {
+            // Auto-save every 30 seconds
+            STATE.autoSaveInterval = setInterval(() => {
+                if (Object.keys(STATE.sheets).length > 0 && STATE.hasUnsavedChanges) {
+                    saveToStorage();
+                }
+            }, 30000);
+        }
+
+        function startAutoSaveIndicator() {
+            // Update the "last saved" indicator every 10 seconds
+            setInterval(() => {
+                updateAutoSaveIndicator();
+            }, 10000);
+        }
+
+        function updateAutoSaveIndicator() {
+            const infoElement = document.getElementById('autoSaveInfo');
+            if (!STATE.lastSaved) {
+                infoElement.textContent = '';
+                return;
+            }
+            
+            const now = new Date();
+            const diff = Math.floor((now - STATE.lastSaved) / 1000);
+            
+            if (diff < 60) {
+                infoElement.textContent = '(saved just now)';
+            } else if (diff < 3600) {
+                const mins = Math.floor(diff / 60);
+                infoElement.textContent = `(saved ${mins}m ago)`;
+            } else {
+                const hours = Math.floor(diff / 3600);
+                infoElement.textContent = `(saved ${hours}h ago)`;
             }
         }
 
@@ -1227,6 +1294,7 @@
                     STATE.historyIndex = data.historyIndex || -1;
                     STATE.fileName = data.fileName || 'data.xlsx';
                     STATE.columnTypes = data.columnTypes || {};
+                    STATE.lastSaved = data.timestamp ? new Date(data.timestamp) : null;
                     
                     if (Object.keys(STATE.sheets).length > 0) {
                         STATE.filteredData = [...STATE.sheets[STATE.currentSheet]];
@@ -1234,8 +1302,12 @@
                         renderDynamicFilters();
                         renderTable();
                         showDashboard();
-                        showToast('Previous session restored', 'success');
+                        
+                        const savedTime = STATE.lastSaved ? 
+                            ` (saved on ${STATE.lastSaved.toLocaleString()})` : '';
+                        showToast('✅ Previous session restored' + savedTime, 'success');
                         updateUndoRedoButtons();
+                        updateAutoSaveIndicator();
                     }
                 }
                 
@@ -1245,6 +1317,7 @@
                 }
             } catch (error) {
                 console.error('Load error:', error);
+                showToast('Error loading previous session', 'error');
             }
         }
 
@@ -1307,7 +1380,12 @@
         }
 
         function resetApp() {
-            if (confirm('Are you sure? This will clear all data and start fresh.')) {
+            if (confirm('⚠️ Are you sure? This will clear all data and start fresh. All saved data will be permanently deleted.')) {
+                // Clear auto-save interval
+                if (STATE.autoSaveInterval) {
+                    clearInterval(STATE.autoSaveInterval);
+                }
+                
                 STATE.workbook = null;
                 STATE.sheets = {};
                 STATE.currentSheet = null;
@@ -1316,12 +1394,18 @@
                 STATE.historyIndex = -1;
                 STATE.fileName = '';
                 STATE.columnTypes = {};
+                STATE.lastSaved = null;
+                STATE.hasUnsavedChanges = false;
                 
                 localStorage.removeItem('excelDashboardData');
                 
                 document.getElementById('uploadSection').style.display = 'flex';
                 document.getElementById('dashboardSection').style.display = 'none';
                 document.getElementById('fileInput').value = '';
+                document.getElementById('autoSaveInfo').textContent = '';
+                
+                // Restart auto-save
+                startAutoSave();
                 
                 showToast('App reset successfully', 'success');
                 logActivity('App Reset');
@@ -1329,12 +1413,24 @@
         }
 
         function updateStatus(text, type = 'success') {
+            const indicator = document.getElementById('statusIndicator');
             const statusText = document.getElementById('statusText');
-            statusText.textContent = text;
             
-            setTimeout(() => {
-                statusText.textContent = 'Ready';
-            }, 2000);
+            statusText.textContent = text;
+            indicator.className = 'status-indicator';
+            
+            if (type === 'error') {
+                indicator.classList.add('error');
+            } else if (type === 'saving') {
+                indicator.classList.add('saving');
+            }
+            
+            if (type !== 'saving') {
+                setTimeout(() => {
+                    statusText.textContent = 'Ready';
+                    indicator.className = 'status-indicator';
+                }, 2000);
+            }
         }
 
         function showToast(message, type = 'success') {
@@ -1366,11 +1462,36 @@
             return div.innerHTML;
         }
 
-        window.addEventListener('beforeunload', () => {
+        window.addEventListener('beforeunload', (e) => {
+            // Save data before closing
             if (Object.keys(STATE.sheets).length > 0) {
                 saveToStorage();
             }
+            
+            // Warn user if there are unsaved changes
+            if (STATE.hasUnsavedChanges) {
+                e.preventDefault();
+                e.returnValue = 'You have unsaved changes. Are you sure you want to leave?';
+                return e.returnValue;
+            }
         });
+
+        // Save on visibility change (tab switching, minimize, etc.)
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden && Object.keys(STATE.sheets).length > 0) {
+                saveToStorage();
+                logActivity('Auto-save on tab hide');
+            }
+        });
+
+        // Periodically check if data exists and show info
+        setInterval(() => {
+            if (Object.keys(STATE.sheets).length > 0) {
+                const dataSize = new Blob([JSON.stringify(STATE.sheets)]).size;
+                const sizeInKB = (dataSize / 1024).toFixed(2);
+                console.log(`📊 Data stored locally: ${sizeInKB} KB`);
+            }
+        }, 60000); // Every minute
     </script>
 </body>
 </html>
