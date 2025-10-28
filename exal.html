@@ -1,0 +1,1376 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Excel Dashboard Pro - Enhanced Edition</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary-color: #2196F3;
+            --primary-dark: #1976D2;
+            --primary-light: #BBDEFB;
+            --secondary-color: #64B5F6;
+            --success-color: #4CAF50;
+            --warning-color: #FF9800;
+            --error-color: #F44336;
+            --bg-primary: #FFFFFF;
+            --bg-secondary: #F5F9FC;
+            --bg-card: #FFFFFF;
+            --text-primary: #1A1A1A;
+            --text-secondary: #666666;
+            --border-color: #E3F2FD;
+            --shadow-sm: 0 2px 4px rgba(33, 150, 243, 0.08);
+            --shadow-md: 0 4px 12px rgba(33, 150, 243, 0.12);
+            --shadow-lg: 0 8px 24px rgba(33, 150, 243, 0.16);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+            background: linear-gradient(135deg, #E3F2FD 0%, #FFFFFF 50%, #F5F9FC 100%);
+            color: var(--text-primary);
+            min-height: 100vh;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        /* Header */
+        .header {
+            background: var(--bg-primary);
+            box-shadow: var(--shadow-md);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            animation: slideDown 0.4s ease-out;
+        }
+
+        @keyframes slideDown {
+            from { transform: translateY(-100%); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 0;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .logo svg {
+            animation: rotate 20s linear infinite;
+        }
+
+        @keyframes rotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        .logo h1 {
+            font-size: 24px;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            background: var(--bg-secondary);
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .status-indicator .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--success-color);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.6; transform: scale(1.2); }
+        }
+
+        /* Buttons */
+        .btn-primary, .btn-secondary, .btn-text {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+            color: white;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .btn-secondary {
+            background: var(--bg-secondary);
+            color: var(--primary-color);
+            border: 2px solid var(--border-color);
+        }
+
+        .btn-secondary:hover {
+            background: var(--primary-light);
+            border-color: var(--primary-color);
+        }
+
+        .btn-text {
+            background: transparent;
+            color: var(--primary-color);
+            padding: 8px 16px;
+        }
+
+        .btn-text:hover {
+            background: var(--bg-secondary);
+        }
+
+        .btn-icon {
+            width: 40px;
+            height: 40px;
+            border: none;
+            background: transparent;
+            color: var(--text-secondary);
+            cursor: pointer;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+
+        .btn-icon:hover {
+            background: var(--bg-secondary);
+            color: var(--primary-color);
+            transform: scale(1.1);
+        }
+
+        .btn-icon:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+
+        /* Upload Section */
+        .upload-section {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 60vh;
+            animation: fadeIn 0.6s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .upload-card {
+            background: var(--bg-card);
+            border-radius: 20px;
+            padding: 60px 80px;
+            text-align: center;
+            box-shadow: var(--shadow-lg);
+            border: 2px dashed var(--border-color);
+            transition: all 0.3s ease;
+        }
+
+        .upload-card:hover {
+            border-color: var(--primary-color);
+            transform: translateY(-4px);
+            box-shadow: 0 12px 32px rgba(33, 150, 243, 0.2);
+        }
+
+        .upload-icon {
+            margin-bottom: 30px;
+            animation: float 3s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        /* Main Container */
+        .main-container {
+            padding: 40px 20px;
+        }
+
+        /* Sheet Tabs */
+        .sheet-tabs {
+            background: var(--bg-card);
+            padding: 15px 20px;
+            border-radius: 12px 12px 0 0;
+            display: flex;
+            gap: 10px;
+            overflow-x: auto;
+            box-shadow: var(--shadow-sm);
+            margin-bottom: -1px;
+        }
+
+        .sheet-tab {
+            padding: 10px 20px;
+            background: var(--bg-secondary);
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            color: var(--text-secondary);
+            transition: all 0.3s ease;
+            white-space: nowrap;
+        }
+
+        .sheet-tab:hover {
+            background: var(--primary-light);
+            color: var(--primary-dark);
+        }
+
+        .sheet-tab.active {
+            background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+            color: white;
+            border-color: var(--primary-dark);
+        }
+
+        /* Toolbar */
+        .toolbar {
+            background: var(--bg-card);
+            padding: 20px;
+            border-radius: 0 0 12px 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            box-shadow: var(--shadow-sm);
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .toolbar-left, .toolbar-right {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .divider {
+            width: 1px;
+            height: 30px;
+            background: var(--border-color);
+        }
+
+        .record-count {
+            padding: 8px 16px;
+            background: var(--bg-secondary);
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--primary-color);
+        }
+
+        /* Dynamic Filters */
+        .filters-container {
+            background: var(--bg-card);
+            padding: 24px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .filters-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .filters-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+        }
+
+        .filter-group label {
+            display: block;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .filter-input, .filter-select {
+            width: 100%;
+            padding: 10px 14px;
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 14px;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            transition: all 0.3s ease;
+        }
+
+        .filter-input:focus, .filter-select:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.1);
+        }
+
+        /* Table */
+        .table-container {
+            background: var(--bg-card);
+            border-radius: 12px;
+            box-shadow: var(--shadow-sm);
+            overflow: hidden;
+        }
+
+        .table-wrapper {
+            overflow-x: auto;
+            max-height: 600px;
+            overflow-y: auto;
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+
+        .data-table thead {
+            background: linear-gradient(135deg, var(--primary-light), var(--bg-secondary));
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .data-table th {
+            padding: 16px;
+            text-align: left;
+            font-weight: 600;
+            color: var(--primary-dark);
+            text-transform: uppercase;
+            font-size: 12px;
+            letter-spacing: 0.5px;
+            white-space: nowrap;
+        }
+
+        .data-table td {
+            padding: 16px;
+            border-bottom: 1px solid var(--border-color);
+            color: var(--text-primary);
+        }
+
+        .data-table tbody tr {
+            transition: all 0.2s ease;
+        }
+
+        .data-table tbody tr:hover {
+            background: var(--bg-secondary);
+        }
+
+        .editable-cell {
+            cursor: pointer;
+            position: relative;
+        }
+
+        .editable-cell:hover {
+            background: var(--primary-light);
+        }
+
+        .editable-cell input {
+            width: 100%;
+            padding: 8px;
+            border: 2px solid var(--primary-color);
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        .cell-actions {
+            display: none;
+            position: absolute;
+            right: 5px;
+            top: 50%;
+            transform: translateY(-50%);
+            gap: 5px;
+        }
+
+        .editable-cell:hover .cell-actions {
+            display: flex;
+        }
+
+        .cell-btn {
+            padding: 4px 8px;
+            border: none;
+            border-radius: 4px;
+            font-size: 11px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        .cell-btn.save {
+            background: var(--success-color);
+            color: white;
+        }
+
+        .cell-btn.cancel {
+            background: var(--error-color);
+            color: white;
+        }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(4px);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.active {
+            display: flex;
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        .modal-content {
+            background: var(--bg-card);
+            border-radius: 16px;
+            width: 90%;
+            max-width: 600px;
+            max-height: 90vh;
+            overflow: hidden;
+            box-shadow: var(--shadow-lg);
+            animation: slideUpBig 0.3s ease-out;
+        }
+
+        @keyframes slideUpBig {
+            from { opacity: 0; transform: translateY(50px) scale(0.9); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 24px;
+            border-bottom: 2px solid var(--border-color);
+        }
+
+        .modal-body {
+            padding: 24px;
+            max-height: 60vh;
+            overflow-y: auto;
+        }
+
+        .modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+            padding: 20px 24px;
+            border-top: 2px solid var(--border-color);
+        }
+
+        /* Toast */
+        .toast {
+            position: fixed;
+            bottom: -100px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--text-primary);
+            color: white;
+            padding: 16px 24px;
+            border-radius: 12px;
+            box-shadow: var(--shadow-lg);
+            z-index: 3000;
+            transition: bottom 0.3s ease;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .toast.active {
+            bottom: 30px;
+        }
+
+        .toast.success {
+            background: var(--success-color);
+        }
+
+        .toast.error {
+            background: var(--error-color);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .header-content {
+                flex-direction: column;
+                gap: 15px;
+            }
+            
+            .upload-card {
+                padding: 40px 30px;
+            }
+            
+            .filters-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .toolbar {
+                flex-direction: column;
+            }
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 10px;
+            height: 10px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--bg-secondary);
+            border-radius: 5px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--primary-light);
+            border-radius: 5px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--primary-color);
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+            <div class="header-content">
+                <div class="logo">
+                    <svg width="40" height="40" viewBox="0 0 40 40">
+                        <rect width="40" height="40" rx="8" fill="#2196F3"/>
+                        <path d="M12 10 L28 10 L28 30 L12 30 Z" fill="white" opacity="0.2"/>
+                        <path d="M15 15 H25 M15 20 H25 M15 25 H20" stroke="white" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                    <h1>Excel Dashboard Pro</h1>
+                </div>
+                <div class="header-actions">
+                    <span class="status-indicator" id="statusIndicator">
+                        <span class="dot"></span>
+                        <span id="statusText">Ready</span>
+                    </span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <div class="container main-container">
+        <!-- Upload Section -->
+        <section class="upload-section" id="uploadSection">
+            <div class="upload-card">
+                <div class="upload-icon">
+                    <svg width="64" height="64" viewBox="0 0 64 64" fill="none">
+                        <circle cx="32" cy="32" r="30" stroke="#2196F3" stroke-width="2" stroke-dasharray="4 4"/>
+                        <path d="M32 20 L32 44 M20 32 L32 20 L44 32" stroke="#2196F3" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </div>
+                <h2>Upload Excel File</h2>
+                <p>Supports multiple sheets with dynamic filtering</p>
+                <input type="file" id="fileInput" accept=".xlsx,.xls,.csv" hidden>
+                <button class="btn-primary" id="uploadBtn">Choose File</button>
+            </div>
+        </section>
+
+        <!-- Dashboard Section -->
+        <section class="dashboard-section" id="dashboardSection" style="display: none;">
+            <!-- Sheet Tabs -->
+            <div class="sheet-tabs" id="sheetTabs"></div>
+
+            <!-- Toolbar -->
+            <div class="toolbar">
+                <div class="toolbar-left">
+                    <button class="btn-icon" id="undoBtn" title="Undo" disabled>
+                        <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+                            <path d="M3 10h10a4 4 0 110 8H9m-6-8l4-4m-4 4l4 4"/>
+                        </svg>
+                    </button>
+                    <button class="btn-icon" id="redoBtn" title="Redo" disabled>
+                        <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+                            <path d="M17 10H7a4 4 0 100 8h4m6-8l-4-4m4 4l-4 4"/>
+                        </svg>
+                    </button>
+                    <div class="divider"></div>
+                    <button class="btn-secondary" id="downloadBtn">
+                        <svg width="18" height="18" viewBox="0 0 20 20" fill="currentColor">
+                            <path d="M10 12l-4-4h3V4h2v4h3l-4 4zm-7 4h14v2H3v-2z"/>
+                        </svg>
+                        Download Excel
+                    </button>
+                    <button class="btn-secondary" id="downloadLogsBtn" title="Download Logs">
+                        <svg width="18" height="18" viewBox="0 0 20 20" fill="currentColor">
+                            <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"/>
+                            <path d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5z"/>
+                        </svg>
+                        Logs
+                    </button>
+                    <button class="btn-secondary" id="newUploadBtn">
+                        <svg width="18" height="18" viewBox="0 0 20 20" fill="currentColor">
+                            <path d="M10 3v4m0 0v4m0-4h4m-4 0H6m12 6H2l1.5-6h13L18 13z"/>
+                        </svg>
+                        New File
+                    </button>
+                </div>
+                <div class="toolbar-right">
+                    <span class="record-count" id="recordCount">0 records</span>
+                </div>
+            </div>
+
+            <!-- Dynamic Filters -->
+            <div class="filters-container">
+                <div class="filters-header">
+                    <h3>Filters</h3>
+                    <button class="btn-text" id="clearFiltersBtn">Clear All</button>
+                </div>
+                <div class="filters-grid" id="filtersGrid"></div>
+            </div>
+
+            <!-- Data Table -->
+            <div class="table-container">
+                <div class="table-wrapper">
+                    <table class="data-table" id="dataTable">
+                        <thead id="tableHead"></thead>
+                        <tbody id="tableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- Log Modal -->
+    <div class="modal" id="logModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Download Activity Logs</h3>
+                <button class="btn-icon" id="closeLogModalBtn">
+                    <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+                        <path d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p style="margin-bottom: 20px;">Enter the secret key to download activity logs:</p>
+                <input type="password" id="secretKeyInput" placeholder="Enter secret key" class="filter-input" style="width: 100%;">
+                
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" id="cancelLogBtn">Cancel</button>
+                <button class="btn-primary" id="confirmLogBtn">Download</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast -->
+    <div class="toast" id="toast"></div>
+
+    <script>
+        const STATE = {
+            workbook: null,
+            sheets: {},
+            currentSheet: null,
+            filteredData: [],
+            history: [],
+            historyIndex: -1,
+            fileName: '',
+            activityLogs: [],
+            secretKey: 'admin123',
+            editingCell: null,
+            columnTypes: {}
+        };
+
+        document.addEventListener('DOMContentLoaded', () => {
+            initializeApp();
+            loadFromStorage();
+        });
+
+        function initializeApp() {
+            document.getElementById('uploadBtn').addEventListener('click', () => {
+                document.getElementById('fileInput').click();
+            });
+            
+            document.getElementById('fileInput').addEventListener('change', handleFileUpload);
+            
+            const uploadCard = document.querySelector('.upload-card');
+            uploadCard.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                uploadCard.style.borderColor = 'var(--primary-color)';
+            });
+            
+            uploadCard.addEventListener('dragleave', () => {
+                uploadCard.style.borderColor = 'var(--border-color)';
+            });
+            
+            uploadCard.addEventListener('drop', (e) => {
+                e.preventDefault();
+                uploadCard.style.borderColor = 'var(--border-color)';
+                const files = e.dataTransfer.files;
+                if (files.length > 0) {
+                    handleFile(files[0]);
+                }
+            });
+            
+            document.getElementById('clearFiltersBtn').addEventListener('click', clearFilters);
+            document.getElementById('undoBtn').addEventListener('click', undo);
+            document.getElementById('redoBtn').addEventListener('click', redo);
+            document.getElementById('downloadBtn').addEventListener('click', downloadExcel);
+            document.getElementById('downloadLogsBtn').addEventListener('click', () => {
+                document.getElementById('logModal').classList.add('active');
+            });
+            document.getElementById('newUploadBtn').addEventListener('click', resetApp);
+            
+            document.getElementById('closeLogModalBtn').addEventListener('click', () => {
+                document.getElementById('logModal').classList.remove('active');
+            });
+            document.getElementById('cancelLogBtn').addEventListener('click', () => {
+                document.getElementById('logModal').classList.remove('active');
+            });
+            document.getElementById('confirmLogBtn').addEventListener('click', downloadLogs);
+        }
+
+        function handleFileUpload(e) {
+            const file = e.target.files[0];
+            if (file) {
+                handleFile(file);
+            }
+        }
+
+        function handleFile(file) {
+            if (!file.name.match(/\.(xlsx|xls|csv)$/)) {
+                showToast('Please upload a valid Excel file (.xlsx, .xls, .csv)', 'error');
+                return;
+            }
+            
+            STATE.fileName = file.name;
+            
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    STATE.workbook = XLSX.read(data, { type: 'array' });
+                    processWorkbook();
+                    showDashboard();
+                    logActivity('File Uploaded', { fileName: file.name, size: file.size });
+                    showToast('File loaded successfully!', 'success');
+                } catch (error) {
+                    showToast('Error reading file: ' + error.message, 'error');
+                    logActivity('File Upload Error', { fileName: file.name, error: error.message });
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        function processWorkbook() {
+            STATE.sheets = {};
+            
+            STATE.workbook.SheetNames.forEach(sheetName => {
+                const sheet = STATE.workbook.Sheets[sheetName];
+                const jsonData = XLSX.utils.sheet_to_json(sheet, { defval: '' });
+                
+                STATE.sheets[sheetName] = jsonData.map((row, index) => ({
+                    _id: index,
+                    ...row
+                }));
+            });
+            
+            STATE.currentSheet = STATE.workbook.SheetNames[0];
+            STATE.filteredData = [...STATE.sheets[STATE.currentSheet]];
+            
+            analyzeColumnTypes(STATE.currentSheet);
+            saveState();
+            renderSheetTabs();
+            renderDynamicFilters();
+            renderTable();
+            saveToStorage();
+        }
+
+        function analyzeColumnTypes(sheetName) {
+            const data = STATE.sheets[sheetName];
+            if (data.length === 0) return;
+            
+            const columns = Object.keys(data[0]).filter(key => key !== '_id');
+            STATE.columnTypes[sheetName] = {};
+            
+            columns.forEach(col => {
+                const values = data.map(row => row[col]).filter(v => v !== '');
+                const uniqueValues = new Set(values);
+                
+                const isNumeric = values.every(v => !isNaN(parseFloat(v)));
+                const isDate = values.some(v => !isNaN(Date.parse(v)));
+                
+                STATE.columnTypes[sheetName][col] = {
+                    type: uniqueValues.size < data.length * 0.3 && !isNumeric ? 'categorical' : 
+                          isNumeric ? 'numeric' : 'text',
+                    uniqueValues: uniqueValues.size < 50 ? Array.from(uniqueValues).sort() : []
+                };
+            });
+        }
+
+        function renderSheetTabs() {
+            const tabsContainer = document.getElementById('sheetTabs');
+            tabsContainer.innerHTML = STATE.workbook.SheetNames.map(name => `
+                <div class="sheet-tab ${name === STATE.currentSheet ? 'active' : ''}" 
+                     onclick="switchSheet('${name}')">
+                    ${escapeHtml(name)} (${STATE.sheets[name].length})
+                </div>
+            `).join('');
+        }
+
+        function switchSheet(sheetName) {
+            STATE.currentSheet = sheetName;
+            STATE.filteredData = [...STATE.sheets[sheetName]];
+            renderSheetTabs();
+            renderDynamicFilters();
+            renderTable();
+            logActivity('Sheet Switched', { sheetName });
+        }
+
+        function renderDynamicFilters() {
+            const filtersGrid = document.getElementById('filtersGrid');
+            const data = STATE.sheets[STATE.currentSheet];
+            
+            if (data.length === 0) {
+                filtersGrid.innerHTML = '<p>No data available</p>';
+                return;
+            }
+            
+            const columns = Object.keys(data[0]).filter(key => key !== '_id');
+            const columnInfo = STATE.columnTypes[STATE.currentSheet];
+            
+            let filtersHTML = `
+                <div class="filter-group">
+                    <label>Search All</label>
+                    <input type="text" id="searchInput" placeholder="Search all fields..." class="filter-input">
+                </div>
+            `;
+            
+            columns.forEach(col => {
+                const info = columnInfo[col];
+                
+                if (info.type === 'categorical' && info.uniqueValues.length > 0) {
+                    filtersHTML += `
+                        <div class="filter-group">
+                            <label>${escapeHtml(col)}</label>
+                            <select class="filter-select" data-column="${escapeHtml(col)}">
+                                <option value="">All</option>
+                                ${info.uniqueValues.map(val => 
+                                    `<option value="${escapeHtml(val)}">${escapeHtml(val)}</option>`
+                                ).join('')}
+                            </select>
+                        </div>
+                    `;
+                } else if (info.type === 'numeric') {
+                    filtersHTML += `
+                        <div class="filter-group">
+                            <label>${escapeHtml(col)}</label>
+                            <div class="range-inputs">
+                                <input type="number" placeholder="Min" class="filter-input" 
+                                       style="width: 80px; padding: 8px 12px;" 
+                                       data-column="${escapeHtml(col)}" 
+                                       data-range="min">
+                                <span>-</span>
+                                <input type="number" placeholder="Max" class="filter-input" 
+                                       style="width: 80px; padding: 8px 12px;" 
+                                       data-column="${escapeHtml(col)}" 
+                                       data-range="max">
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    filtersHTML += `
+                        <div class="filter-group">
+                            <label>${escapeHtml(col)}</label>
+                            <input type="text" placeholder="Filter..." class="filter-input" 
+                                   data-column="${escapeHtml(col)}">
+                        </div>
+                    `;
+                }
+            });
+            
+            filtersGrid.innerHTML = filtersHTML;
+            
+            document.getElementById('searchInput').addEventListener('input', debounce(applyFilters, 300));
+            
+            document.querySelectorAll('.filter-select').forEach(select => {
+                select.addEventListener('change', applyFilters);
+            });
+            
+            document.querySelectorAll('.filter-input[data-column]').forEach(input => {
+                input.addEventListener('input', debounce(applyFilters, 300));
+            });
+        }
+
+        function applyFilters() {
+            const searchTerm = document.getElementById('searchInput')?.value.toLowerCase() || '';
+            const data = STATE.sheets[STATE.currentSheet];
+            
+            STATE.filteredData = data.filter(row => {
+                if (searchTerm) {
+                    const searchMatch = Object.values(row).some(val => 
+                        String(val).toLowerCase().includes(searchTerm)
+                    );
+                    if (!searchMatch) return false;
+                }
+                
+                const selects = document.querySelectorAll('.filter-select');
+                for (let select of selects) {
+                    const column = select.dataset.column;
+                    const value = select.value;
+                    if (value && String(row[column]) !== value) return false;
+                }
+                
+                const textInputs = document.querySelectorAll('.filter-input[data-column]:not([data-range])');
+                for (let input of textInputs) {
+                    const column = input.dataset.column;
+                    const value = input.value.toLowerCase();
+                    if (value && !String(row[column]).toLowerCase().includes(value)) return false;
+                }
+                
+                const rangeInputs = document.querySelectorAll('.filter-input[data-range]');
+                const rangeFilters = {};
+                rangeInputs.forEach(input => {
+                    const column = input.dataset.column;
+                    const range = input.dataset.range;
+                    if (!rangeFilters[column]) rangeFilters[column] = {};
+                    rangeFilters[column][range] = input.value;
+                });
+                
+                for (let column in rangeFilters) {
+                    const value = parseFloat(row[column]);
+                    const min = rangeFilters[column].min;
+                    const max = rangeFilters[column].max;
+                    
+                    if (min && value < parseFloat(min)) return false;
+                    if (max && value > parseFloat(max)) return false;
+                }
+                
+                return true;
+            });
+            
+            renderTable();
+            logActivity('Filters Applied', { sheetName: STATE.currentSheet });
+        }
+
+        function clearFilters() {
+            document.getElementById('searchInput').value = '';
+            document.querySelectorAll('.filter-select').forEach(select => select.value = '');
+            document.querySelectorAll('.filter-input[data-column]').forEach(input => input.value = '');
+            
+            STATE.filteredData = [...STATE.sheets[STATE.currentSheet]];
+            renderTable();
+            showToast('Filters cleared', 'success');
+        }
+
+        function renderTable() {
+            const thead = document.getElementById('tableHead');
+            const tbody = document.getElementById('tableBody');
+            
+            if (STATE.filteredData.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="100" style="text-align: center; padding: 40px;">No data to display</td></tr>';
+                thead.innerHTML = '';
+                updateRecordCount();
+                return;
+            }
+            
+            const columns = Object.keys(STATE.filteredData[0]).filter(key => key !== '_id');
+            
+            thead.innerHTML = `
+                <tr>
+                    ${columns.map(col => `<th>${escapeHtml(col)}</th>`).join('')}
+                </tr>
+            `;
+            
+            tbody.innerHTML = STATE.filteredData.map(row => `
+                <tr>
+                    ${columns.map(col => `
+                        <td class="editable-cell" 
+                            data-id="${row._id}" 
+                            data-column="${escapeHtml(col)}"
+                            onclick="editCell(this)">
+                            <span class="cell-value">${escapeHtml(row[col])}</span>
+                        </td>
+                    `).join('')}
+                </tr>
+            `).join('');
+            
+            updateRecordCount();
+        }
+
+        function editCell(cell) {
+            if (STATE.editingCell) {
+                cancelEdit(STATE.editingCell);
+            }
+            
+            const id = parseInt(cell.dataset.id);
+            const column = cell.dataset.column;
+            const row = STATE.sheets[STATE.currentSheet].find(r => r._id === id);
+            const currentValue = row[column];
+            
+            STATE.editingCell = { cell, id, column, oldValue: currentValue };
+            
+            cell.innerHTML = `
+                <input type="text" value="${escapeHtml(currentValue)}" 
+                       class="cell-edit-input" 
+                       onkeydown="handleCellKeydown(event, this)"
+                       onblur="saveCellEdit(this)">
+            `;
+            
+            const input = cell.querySelector('input');
+            input.focus();
+            input.select();
+        }
+
+        function handleCellKeydown(event, input) {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                saveCellEdit(input);
+            } else if (event.key === 'Escape') {
+                event.preventDefault();
+                cancelEdit(STATE.editingCell.cell);
+            }
+        }
+
+        function saveCellEdit(input) {
+            if (!STATE.editingCell) return;
+            
+            const { cell, id, column, oldValue } = STATE.editingCell;
+            const newValue = input.value;
+            
+            if (newValue !== oldValue) {
+                const row = STATE.sheets[STATE.currentSheet].find(r => r._id === id);
+                row[column] = newValue;
+                
+                saveState();
+                saveToStorage();
+                logActivity('Cell Edited', { 
+                    sheetName: STATE.currentSheet, 
+                    id, 
+                    column, 
+                    oldValue, 
+                    newValue 
+                });
+                showToast('Cell updated', 'success');
+            }
+            
+            cell.innerHTML = `<span class="cell-value">${escapeHtml(newValue)}</span>`;
+            STATE.editingCell = null;
+        }
+
+        function cancelEdit(cell) {
+            if (!STATE.editingCell) return;
+            
+            const { oldValue } = STATE.editingCell;
+            cell.innerHTML = `<span class="cell-value">${escapeHtml(oldValue)}</span>`;
+            STATE.editingCell = null;
+        }
+
+        function updateRecordCount() {
+            const count = STATE.filteredData.length;
+            const total = STATE.sheets[STATE.currentSheet].length;
+            document.getElementById('recordCount').textContent = 
+                count === total ? `${total} records` : `${count} of ${total} records`;
+        }
+
+        function saveState() {
+            STATE.history = STATE.history.slice(0, STATE.historyIndex + 1);
+            STATE.history.push(JSON.parse(JSON.stringify(STATE.sheets)));
+            STATE.historyIndex++;
+            
+            if (STATE.history.length > 50) {
+                STATE.history.shift();
+                STATE.historyIndex--;
+            }
+            
+            updateUndoRedoButtons();
+        }
+
+        function undo() {
+            if (STATE.historyIndex > 0) {
+                STATE.historyIndex--;
+                STATE.sheets = JSON.parse(JSON.stringify(STATE.history[STATE.historyIndex]));
+                STATE.filteredData = [...STATE.sheets[STATE.currentSheet]];
+                renderTable();
+                updateUndoRedoButtons();
+                saveToStorage();
+                showToast('Undo successful', 'success');
+                logActivity('Undo Action');
+            }
+        }
+
+        function redo() {
+            if (STATE.historyIndex < STATE.history.length - 1) {
+                STATE.historyIndex++;
+                STATE.sheets = JSON.parse(JSON.stringify(STATE.history[STATE.historyIndex]));
+                STATE.filteredData = [...STATE.sheets[STATE.currentSheet]];
+                renderTable();
+                updateUndoRedoButtons();
+                saveToStorage();
+                showToast('Redo successful', 'success');
+                logActivity('Redo Action');
+            }
+        }
+
+        function updateUndoRedoButtons() {
+            document.getElementById('undoBtn').disabled = STATE.historyIndex <= 0;
+            document.getElementById('redoBtn').disabled = STATE.historyIndex >= STATE.history.length - 1;
+        }
+
+        function downloadExcel() {
+            try {
+                const wb = XLSX.utils.book_new();
+                
+                Object.keys(STATE.sheets).forEach(sheetName => {
+                    const exportData = STATE.sheets[sheetName].map(row => {
+                        const { _id, ...rest } = row;
+                        return rest;
+                    });
+                    
+                    const ws = XLSX.utils.json_to_sheet(exportData);
+                    XLSX.utils.book_append_sheet(wb, ws, sheetName);
+                });
+                
+                const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
+                const fileName = `${STATE.fileName.replace(/\.[^/.]+$/, '')}_updated_${timestamp}.xlsx`;
+                
+                XLSX.writeFile(wb, fileName);
+                
+                showToast('Excel file downloaded successfully!', 'success');
+                logActivity('Excel Downloaded', { fileName });
+            } catch (error) {
+                showToast('Error downloading file: ' + error.message, 'error');
+                logActivity('Download Error', { error: error.message });
+            }
+        }
+
+        function saveToStorage() {
+            try {
+                const dataToSave = {
+                    sheets: STATE.sheets,
+                    currentSheet: STATE.currentSheet,
+                    history: STATE.history,
+                    historyIndex: STATE.historyIndex,
+                    fileName: STATE.fileName,
+                    columnTypes: STATE.columnTypes,
+                    timestamp: new Date().toISOString()
+                };
+                
+                localStorage.setItem('excelDashboardData', JSON.stringify(dataToSave));
+                updateStatus('Saved');
+                logActivity('Data Saved to Storage');
+            } catch (error) {
+                console.error('Save error:', error);
+                updateStatus('Error', 'error');
+            }
+        }
+
+        function loadFromStorage() {
+            try {
+                const stored = localStorage.getItem('excelDashboardData');
+                if (stored) {
+                    const data = JSON.parse(stored);
+                    STATE.sheets = data.sheets || {};
+                    STATE.currentSheet = data.currentSheet;
+                    STATE.history = data.history || [];
+                    STATE.historyIndex = data.historyIndex || -1;
+                    STATE.fileName = data.fileName || 'data.xlsx';
+                    STATE.columnTypes = data.columnTypes || {};
+                    
+                    if (Object.keys(STATE.sheets).length > 0) {
+                        STATE.filteredData = [...STATE.sheets[STATE.currentSheet]];
+                        renderSheetTabs();
+                        renderDynamicFilters();
+                        renderTable();
+                        showDashboard();
+                        showToast('Previous session restored', 'success');
+                        updateUndoRedoButtons();
+                    }
+                }
+                
+                const logs = localStorage.getItem('excelDashboardLogs');
+                if (logs) {
+                    STATE.activityLogs = JSON.parse(logs);
+                }
+            } catch (error) {
+                console.error('Load error:', error);
+            }
+        }
+
+        function logActivity(action, details = {}) {
+            const log = {
+                timestamp: new Date().toISOString(),
+                action,
+                details,
+                userAgent: navigator.userAgent
+            };
+            
+            STATE.activityLogs.push(log);
+            
+            if (STATE.activityLogs.length > 1000) {
+                STATE.activityLogs = STATE.activityLogs.slice(-1000);
+            }
+            
+            try {
+                localStorage.setItem('excelDashboardLogs', JSON.stringify(STATE.activityLogs));
+            } catch (error) {
+                console.error('Log save error:', error);
+            }
+        }
+
+        function downloadLogs() {
+            const secretInput = document.getElementById('secretKeyInput').value;
+            
+            if (secretInput !== STATE.secretKey) {
+                showToast('Invalid secret key!', 'error');
+                return;
+            }
+            
+            try {
+                const report = {
+                    generatedAt: new Date().toISOString(),
+                    totalLogs: STATE.activityLogs.length,
+                    logs: STATE.activityLogs
+                };
+                
+                const blob = new Blob([JSON.stringify(report, null, 2)], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `activity_logs_${new Date().toISOString().slice(0, 10)}.json`;
+                a.click();
+                URL.revokeObjectURL(url);
+                
+                document.getElementById('logModal').classList.remove('active');
+                document.getElementById('secretKeyInput').value = '';
+                showToast('Activity logs downloaded successfully!', 'success');
+                logActivity('Logs Downloaded');
+            } catch (error) {
+                showToast('Error downloading logs: ' + error.message, 'error');
+            }
+        }
+
+        function showDashboard() {
+            document.getElementById('uploadSection').style.display = 'none';
+            document.getElementById('dashboardSection').style.display = 'block';
+        }
+
+        function resetApp() {
+            if (confirm('Are you sure? This will clear all data and start fresh.')) {
+                STATE.workbook = null;
+                STATE.sheets = {};
+                STATE.currentSheet = null;
+                STATE.filteredData = [];
+                STATE.history = [];
+                STATE.historyIndex = -1;
+                STATE.fileName = '';
+                STATE.columnTypes = {};
+                
+                localStorage.removeItem('excelDashboardData');
+                
+                document.getElementById('uploadSection').style.display = 'flex';
+                document.getElementById('dashboardSection').style.display = 'none';
+                document.getElementById('fileInput').value = '';
+                
+                showToast('App reset successfully', 'success');
+                logActivity('App Reset');
+            }
+        }
+
+        function updateStatus(text, type = 'success') {
+            const statusText = document.getElementById('statusText');
+            statusText.textContent = text;
+            
+            setTimeout(() => {
+                statusText.textContent = 'Ready';
+            }, 2000);
+        }
+
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.className = `toast ${type}`;
+            toast.classList.add('active');
+            
+            setTimeout(() => {
+                toast.classList.remove('active');
+            }, 3000);
+        }
+
+        function debounce(func, wait) {
+            let timeout;
+            return function executedFunction(...args) {
+                const later = () => {
+                    clearTimeout(timeout);
+                    func(...args);
+                };
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+            };
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        window.addEventListener('beforeunload', () => {
+            if (Object.keys(STATE.sheets).length > 0) {
+                saveToStorage();
+            }
+        });
+    </script>
+</body>
+</html>
