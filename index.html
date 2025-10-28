@@ -721,7 +721,7 @@
             <div class="modal-body">
                 <p style="margin-bottom: 20px;">Enter the secret key to download activity logs:</p>
                 <input type="password" id="secretKeyInput" placeholder="Enter secret key" class="filter-input" style="width: 100%;">
-                
+                <p style="margin-top: 10px; font-size: 12px; color: #666;">Default: admin123</p>
             </div>
             <div class="modal-footer">
                 <button class="btn-secondary" id="cancelLogBtn">Cancel</button>
@@ -752,10 +752,21 @@
         };
 
         document.addEventListener('DOMContentLoaded', () => {
+            console.log('🚀 Excel Dashboard Pro - Enhanced Edition');
+            console.log('📍 Testing localStorage availability...');
+            
+            testLocalStorage();
             initializeApp();
             loadFromStorage();
             startAutoSave();
             startAutoSaveIndicator();
+            
+            // Show storage info
+            if (typeof(Storage) !== "undefined") {
+                console.log('💾 Storage: LocalStorage enabled');
+            } else {
+                console.error('❌ Storage: LocalStorage NOT available');
+            }
         });
 
         function initializeApp() {
@@ -1117,7 +1128,11 @@
                 
                 STATE.hasUnsavedChanges = true;
                 saveState();
+                
+                // Immediate save on edit
+                console.log('💾 Saving after cell edit...');
                 saveToStorage();
+                
                 logActivity('Cell Edited', { 
                     sheetName: STATE.currentSheet, 
                     id, 
@@ -1125,7 +1140,7 @@
                     oldValue, 
                     newValue 
                 });
-                showToast('Cell updated & auto-saved', 'success');
+                showToast('✅ Cell updated & saved', 'success');
             }
             
             cell.innerHTML = `<span class="cell-value">${escapeHtml(newValue)}</span>`;
@@ -1165,10 +1180,11 @@
                 STATE.historyIndex--;
                 STATE.sheets = JSON.parse(JSON.stringify(STATE.history[STATE.historyIndex]));
                 STATE.filteredData = [...STATE.sheets[STATE.currentSheet]];
+                STATE.hasUnsavedChanges = true;
                 renderTable();
                 updateUndoRedoButtons();
                 saveToStorage();
-                showToast('Undo successful', 'success');
+                showToast('↩️ Undo successful', 'success');
                 logActivity('Undo Action');
             }
         }
@@ -1178,10 +1194,11 @@
                 STATE.historyIndex++;
                 STATE.sheets = JSON.parse(JSON.stringify(STATE.history[STATE.historyIndex]));
                 STATE.filteredData = [...STATE.sheets[STATE.currentSheet]];
+                STATE.hasUnsavedChanges = true;
                 renderTable();
                 updateUndoRedoButtons();
                 saveToStorage();
-                showToast('Redo successful', 'success');
+                showToast('↪️ Redo successful', 'success');
                 logActivity('Redo Action');
             }
         }
@@ -1225,34 +1242,75 @@
                 const dataToSave = {
                     sheets: STATE.sheets,
                     currentSheet: STATE.currentSheet,
-                    history: STATE.history,
-                    historyIndex: STATE.historyIndex,
+                    history: STATE.history.slice(-10), // Keep only last 10 history states
+                    historyIndex: Math.min(STATE.historyIndex, 9),
                     fileName: STATE.fileName,
                     columnTypes: STATE.columnTypes,
                     timestamp: new Date().toISOString()
                 };
                 
-                localStorage.setItem('excelDashboardData', JSON.stringify(dataToSave));
-                STATE.lastSaved = new Date();
-                STATE.hasUnsavedChanges = false;
+                const jsonString = JSON.stringify(dataToSave);
+                const sizeInMB = (new Blob([jsonString]).size / (1024 * 1024)).toFixed(2);
                 
-                updateStatus('Saved', 'success');
-                updateAutoSaveIndicator();
-                logActivity('Data Saved to Storage');
+                // Check localStorage availability and quota
+                if (typeof(Storage) === "undefined") {
+                    throw new Error("LocalStorage not supported");
+                }
+                
+                // Try to save
+                try {
+                    localStorage.setItem('excelDashboardData', jsonString);
+                    STATE.lastSaved = new Date();
+                    STATE.hasUnsavedChanges = false;
+                    
+                    updateStatus('Saved', 'success');
+                    updateAutoSaveIndicator();
+                    console.log(`✅ Data saved: ${sizeInMB} MB`);
+                    logActivity('Data Saved to Storage', { size: sizeInMB + ' MB' });
+                } catch (quotaError) {
+                    // If quota exceeded, try saving with minimal history
+                    console.warn('Quota exceeded, saving with minimal history');
+                    dataToSave.history = [STATE.history[STATE.historyIndex]];
+                    dataToSave.historyIndex = 0;
+                    
+                    localStorage.setItem('excelDashboardData', JSON.stringify(dataToSave));
+                    STATE.lastSaved = new Date();
+                    STATE.hasUnsavedChanges = false;
+                    
+                    updateStatus('Saved (limited history)', 'success');
+                    updateAutoSaveIndicator();
+                    showToast('⚠️ Storage limit reached - history reduced', 'warning');
+                }
+                
             } catch (error) {
                 console.error('Save error:', error);
                 updateStatus('Save Error', 'error');
-                showToast('Error saving data: ' + error.message, 'error');
+                showToast('❌ Error saving data: ' + error.message, 'error');
+                
+                // Log to activity logs even if localStorage fails
+                STATE.activityLogs.push({
+                    timestamp: new Date().toISOString(),
+                    action: 'Save Error',
+                    details: { error: error.message }
+                });
             }
         }
 
         function startAutoSave() {
+            // Clear any existing interval
+            if (STATE.autoSaveInterval) {
+                clearInterval(STATE.autoSaveInterval);
+            }
+            
             // Auto-save every 30 seconds
             STATE.autoSaveInterval = setInterval(() => {
-                if (Object.keys(STATE.sheets).length > 0 && STATE.hasUnsavedChanges) {
+                if (Object.keys(STATE.sheets).length > 0) {
+                    console.log('🔄 Auto-save triggered');
                     saveToStorage();
                 }
-            }, 30000);
+            }, 30000); // 30 seconds
+            
+            console.log('✅ Auto-save started (every 30 seconds)');
         }
 
         function startAutoSaveIndicator() {
@@ -1280,6 +1338,20 @@
             } else {
                 const hours = Math.floor(diff / 3600);
                 infoElement.textContent = `(saved ${hours}h ago)`;
+            }
+        }
+
+        function testLocalStorage() {
+            try {
+                const test = '__localStorage_test__';
+                localStorage.setItem(test, test);
+                localStorage.removeItem(test);
+                console.log('✅ LocalStorage is working');
+                return true;
+            } catch(e) {
+                console.error('❌ LocalStorage not available:', e);
+                showToast('⚠️ LocalStorage not available - data will not persist', 'error');
+                return false;
             }
         }
 
@@ -1339,6 +1411,7 @@
                 localStorage.setItem('excelDashboardLogs', JSON.stringify(STATE.activityLogs));
             } catch (error) {
                 console.error('Log save error:', error);
+                // Don't show error toast for log failures
             }
         }
 
@@ -1487,11 +1560,54 @@
         // Periodically check if data exists and show info
         setInterval(() => {
             if (Object.keys(STATE.sheets).length > 0) {
-                const dataSize = new Blob([JSON.stringify(STATE.sheets)]).size;
-                const sizeInKB = (dataSize / 1024).toFixed(2);
-                console.log(`📊 Data stored locally: ${sizeInKB} KB`);
+                try {
+                    const dataSize = new Blob([JSON.stringify(STATE.sheets)]).size;
+                    const sizeInKB = (dataSize / 1024).toFixed(2);
+                    const sizeInMB = (dataSize / (1024 * 1024)).toFixed(2);
+                    
+                    if (sizeInMB > 1) {
+                        console.log(`📊 Data stored locally: ${sizeInMB} MB`);
+                    } else {
+                        console.log(`📊 Data stored locally: ${sizeInKB} KB`);
+                    }
+                    
+                    // Check localStorage usage
+                    let totalSize = 0;
+                    for (let key in localStorage) {
+                        if (localStorage.hasOwnProperty(key)) {
+                            totalSize += localStorage[key].length + key.length;
+                        }
+                    }
+                    const totalMB = (totalSize / (1024 * 1024)).toFixed(2);
+                    console.log(`💾 Total localStorage usage: ${totalMB} MB / ~5-10 MB limit`);
+                    
+                } catch (error) {
+                    console.error('Error checking storage:', error);
+                }
             }
         }, 60000); // Every minute
+
+        // Manual save button (optional - for debugging)
+        window.manualSave = function() {
+            console.log('🔧 Manual save triggered');
+            saveToStorage();
+        };
+
+        // Check localStorage availability on startup
+        console.log('🔍 Checking localStorage support...');
+        if (typeof(Storage) !== "undefined") {
+            console.log('✅ localStorage is supported');
+            try {
+                const testKey = '__test__';
+                localStorage.setItem(testKey, 'test');
+                localStorage.removeItem(testKey);
+                console.log('✅ localStorage is writable');
+            } catch (e) {
+                console.error('❌ localStorage is read-only or full:', e);
+            }
+        } else {
+            console.error('❌ localStorage is NOT supported in this browser');
+        }
     </script>
 </body>
 </html>
