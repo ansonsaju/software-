@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Excel Formula Generator</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 700px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 2em;
+        }
+        
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 0.95em;
+        }
+        
+        .info-box {
+            background: #f8f9fa;
+            border-left: 4px solid #667eea;
+            padding: 20px;
+            margin-bottom: 30px;
+            border-radius: 5px;
+        }
+        
+        .info-box h2 {
+            color: #667eea;
+            font-size: 1.2em;
+            margin-bottom: 15px;
+        }
+        
+        .info-box ul {
+            list-style: none;
+            padding-left: 0;
+        }
+        
+        .info-box li {
+            padding: 8px 0;
+            color: #555;
+            line-height: 1.6;
+        }
+        
+        .info-box li strong {
+            color: #333;
+            display: inline-block;
+            min-width: 120px;
+        }
+        
+        .note {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin-bottom: 30px;
+            border-radius: 5px;
+            color: #856404;
+        }
+        
+        .note strong {
+            display: block;
+            margin-bottom: 5px;
+            color: #856404;
+        }
+        
+        .download-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 18px 40px;
+            font-size: 1.1em;
+            border-radius: 50px;
+            cursor: pointer;
+            width: 100%;
+            transition: transform 0.2s, box-shadow 0.2s;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .download-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
+        }
+        
+        .download-btn:active {
+            transform: translateY(0);
+        }
+        
+        .example {
+            background: #e7f3ff;
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 20px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+        }
+        
+        .example strong {
+            color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📊 Excel Formula Generator</h1>
+        <p class="subtitle">LL-CH-SL Parser with Auto-Formatting</p>
+        
+        <div class="info-box">
+            <h2>File Contents</h2>
+            <ul>
+                <li><strong>Column A:</strong> Input (LL-CH-SL)</li>
+                <li><strong>Column B:</strong> LL - Extracts first number</li>
+                <li><strong>Column C:</strong> Chest - Extracts middle number</li>
+                <li><strong>Column D:</strong> Sleeve - Extracts last number</li>
+                <li><strong>Column E:</strong> Final Output (LLxCHxSL)</li>
+            </ul>
+            
+            <div class="example">
+                <strong>Example:</strong><br>
+                Input: 15-38-32 → Output: 15x38x32
+            </div>
+        </div>
+        
+        <div class="note">
+            <strong>⚠️ Important Note:</strong>
+            After opening the Excel file, format Column A as Text to prevent Excel from auto-converting your input. 
+            Select Column A → Right-click → Format Cells → Text
+        </div>
+        
+        <button class="download-btn" onclick="generateExcel()">
+            ⬇️ Download Excel File
+        </button>
+    </div>
+
+    <script>
+        function generateExcel() {
+            // Create workbook
+            const wb = XLSX.utils.book_new();
+            
+            // Create worksheet data
+            const ws_data = [
+                ['Input (LL-CH-SL)', 'LL', 'Chest', 'Sleeve', 'Final Output (LLxCHxSL)']
+            ];
+            
+            // Add 100 rows with formulas
+            for (let i = 2; i <= 101; i++) {
+                ws_data.push([
+                    '', // Column A - empty, user will input
+                    { f: `IF(A${i}<>"", TEXT(--LEFT(A${i}, FIND("-",A${i})-1),"00"), "")` },
+                    { f: `IF(A${i}<>"", TEXT(--MID(A${i}, FIND("-",A${i})+1, FIND("-",A${i}, FIND("-",A${i})+1)-FIND("-",A${i})-1),"00"), "")` },
+                    { f: `IF(A${i}<>"", TEXT(--RIGHT(A${i}, LEN(A${i})-FIND("~",SUBSTITUTE(A${i},"-","~",2))),"00"), "")` },
+                    { f: `IF(AND(B${i}<>"",C${i}<>"",D${i}<>""), B${i} & "x" & C${i} & "x" & D${i}, "")` }
+                ]);
+            }
+            
+            // Create worksheet from data
+            const ws = XLSX.utils.aoa_to_sheet(ws_data);
+            
+            // Set column widths
+            ws['!cols'] = [
+                { wch: 20 },  // Column A
+                { wch: 10 },  // Column B
+                { wch: 10 },  // Column C
+                { wch: 10 },  // Column D
+                { wch: 25 }   // Column E
+            ];
+            
+            // Format Column A as Text
+            const range = XLSX.utils.decode_range(ws['!ref']);
+            for (let row = 0; row <= range.e.r; row++) {
+                const cellAddress = XLSX.utils.encode_cell({ r: row, c: 0 });
+                if (!ws[cellAddress]) ws[cellAddress] = { t: 's', v: '' };
+                ws[cellAddress].z = '@'; // @ means text format in Excel
+            }
+            
+            // Add worksheet to workbook
+            XLSX.utils.book_append_sheet(wb, ws, 'LL-CH-SL Parser');
+            
+            // Generate Excel file and trigger download
+            XLSX.writeFile(wb, 'LL-CH-SL_Parser.xlsx');
+        }
+    </script>
+</body>
+</html>
